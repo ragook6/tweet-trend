@@ -6,8 +6,8 @@ pipeline {
     }
     environment {
         MAVEN_HOME = "/opt/apache-maven-3.9.4"
-        JAVA_HOME_FOR_MAVEN = "/usr/lib/jvm/java-11-openjdk-amd64" // Adjust this path to your Java 11 installation
-        JAVA_HOME_FOR_SONAR = "/usr/lib/jvm/java-17-openjdk-amd64" // Adjust this path to a Java version compatible with your SonarQube
+        JAVA_HOME_FOR_MAVEN = "/usr/lib/jvm/java-11-openjdk-amd64"
+        JAVA_HOME_FOR_SONAR = "/usr/lib/jvm/java-17-openjdk-amd64"
     }    
     stages {
         stage("Build") {
@@ -19,7 +19,7 @@ pipeline {
                 sh 'mvn clean deploy -Dmaven.test.skip=true'
             }
         }
-            stage("test") {
+        stage("Test") {
             steps {
                 script {
                     env.PATH = "${env.MAVEN_HOME}/bin:${env.PATH}"
@@ -27,7 +27,7 @@ pipeline {
                 }
                 sh 'mvn surefire-report:report'
             }
-        }    
+        }
         stage('SonarQube analysis') {
             environment {
                 scannerHome = tool 'ragook6-sonar-scanner'
@@ -41,6 +41,15 @@ pipeline {
                 }
             }
         }
+        stage("Quality Gate") {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK') {
+                        error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                    }
+                }
+            }
+        }
     }
 }
-
