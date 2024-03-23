@@ -16,7 +16,7 @@ pipeline {
                     env.PATH = "${env.MAVEN_HOME}/bin:${env.PATH}"
                     env.JAVA_HOME = "${env.JAVA_HOME_FOR_MAVEN}"
                 }
-                sh 'mvn clean deploy'
+                sh 'mvn clean deploy -Dmaven.test.skip=true'
             }
         }
             stage("test") {
