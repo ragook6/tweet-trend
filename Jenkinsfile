@@ -19,6 +19,15 @@ pipeline {
                 sh 'mvn clean deploy'
             }
         }
+            stage("test") {
+            steps {
+                script {
+                    env.PATH = "${env.MAVEN_HOME}/bin:${env.PATH}"
+                    env.JAVA_HOME = "${env.JAVA_HOME_FOR_MAVEN}"
+                }
+                sh 'mvn surefire-report:report'
+            }
+        }    
         stage('SonarQube analysis') {
             environment {
                 scannerHome = tool 'ragook6-sonar-scanner'
