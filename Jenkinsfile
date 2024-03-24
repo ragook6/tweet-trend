@@ -1,5 +1,6 @@
-
 def registry = 'https://ragook6.jfrog.io'
+def imageName = 'ragook6.jfrog.io/ragook6-docker-local/ttrend'
+def version = '2.1.4'
 
 pipeline {
     agent {
@@ -11,7 +12,7 @@ pipeline {
         MAVEN_HOME = "/opt/apache-maven-3.9.4"
         JAVA_HOME_FOR_MAVEN = "/usr/lib/jvm/java-11-openjdk-amd64"
         JAVA_HOME_FOR_SONAR = "/usr/lib/jvm/java-17-openjdk-amd64"
-    }    
+    }
     stages {
         stage("Build") {
             steps {
@@ -47,8 +48,8 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 script {
-                    timeout(time: 1, unit: 'HOURS') { 
-                        def qg = waitForQualityGate() // This is a blocking operation, waiting for quality gate status
+                    timeout(time: 1, unit: 'HOURS') {
+                        def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
                             error "Pipeline aborted due to quality gate failure: ${qg.status}"
                         }
@@ -60,7 +61,7 @@ pipeline {
             steps {
                 script {
                     echo '<--------------- Jar Publish Started --------------->'
-                    def server = Artifactory.newServer(url: registry+"/artifactory", credentialsId: "artifact-cred")
+                    def server = Artifactory.newServer(url: registry + "/artifactory", credentialsId: "artifact-cred")
                     def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
                     def uploadSpec = """{
                         "files": [
@@ -69,7 +70,7 @@ pipeline {
                                 "target": "maven-libs-release-local/{1}",
                                 "flat": "false",
                                 "props" : "${properties}",
-                                "exclusions": [ "*.sha1", "*.md5"]
+                                "exclusions": ["*.sha1", "*.md5"]
                             }
                         ]
                     }"""
@@ -77,6 +78,26 @@ pipeline {
                     buildInfo.env.collect()
                     server.publishBuildInfo(buildInfo)
                     echo '<--------------- Jar Publish Ended --------------->'
+                }
+            }
+        }
+        stage("Docker Build") {
+            steps {
+                script {
+                    echo '<--------------- Docker Build Started --------------->'
+                    app = docker.build(imageName + ":" + version)
+                    echo '<--------------- Docker Build Ends --------------->'
+                }
+            }
+        }
+        stage("Docker Publish") {
+            steps {
+                script {
+                    echo '<--------------- Docker Publish Started --------------->'
+                    docker.withRegistry(registry, 'artifact-cred') {
+                        app.push()
+                    }
+                    echo '<--------------- Docker Publish Ended --------------->'
                 }
             }
         }
