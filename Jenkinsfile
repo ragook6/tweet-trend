@@ -1,6 +1,6 @@
 def registry = 'https://ragook6.jfrog.io'
 def imageName = 'ragook6.jfrog.io/ragook6-docker-local/ttrend'
-def version = '2.1.4'
+def version = '2.1.5'
 
 pipeline {
     agent {
